@@ -1,0 +1,86 @@
+from sense_hat import SenseHat
+from datetime import datetime
+from time import sleep
+from threading import Thread
+
+
+FILENAME = ""
+#every other 10, yes 20, no, 30, yes ECT.
+WRITE_FREQUENCY = 2
+TEMP = True
+HUMIDITY = True
+PRESSURE = True
+#time between intervals
+DELAY=10
+
+
+#all headers, where to append
+def file_setup(filename):
+    header = []
+    if TEMP:
+        header.append("temp")
+    if HUMIDITY:
+        header.append("humidity")
+    if PRESSURE:
+        header.append("pressure")
+    header.append("timestamp")
+    
+    with open(filename, "w") as f:
+        f.write(",".join(str(value) for value in header)+ "\n")
+        
+#log data
+def log_data():
+    output_string = ",".join(str(value) for value in sense_data)
+    batch_data.append(output_string)
+    
+def get_sense_data():
+    sense_data=[]
+    
+    if TEMP:
+        sense_data.append(sense.get_temperature())
+        
+    if HUMIDITY:
+        sense_data.append(sense.get_pressure())
+    
+    if PRESSURE:
+        sense_data.append(sense.get_pressure())
+        
+    sense_data.append(datetime.now())
+    
+    return sense_data
+
+#works frequency n delay
+def timed_log():
+    while True:
+        log_data()
+        sleep(DELAY)
+        
+sense = SenseHat()
+batch_data= []
+
+#filename stuff
+if FILENAME == "":
+    filename = "SenseLog-"+str(datetime.now())+".csv"
+else:
+    filename = FILENAME+"-"+str(datetime.now())+".csv"
+    
+file_setup(filename)
+
+
+#tells me its writing between delays
+if DELAY > 0:
+    sense_data = get_sense_data()
+    Thread(target= timed_log).start()
+    
+while True:
+    sense_data = get_sense_data()
+    
+    if DELAY == 0:
+        log_data()
+        
+    if len(batch_data) >= WRITE_FREQUENCY:
+        print("Writing to file..")
+        with open(filename,"a") as f:
+            for line in batch_data:
+                f.write(line + "\n")
+            batch_data = []
